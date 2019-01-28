@@ -21,10 +21,8 @@ minutely = FIOMinutely.FIOMinutely(fio)
 ut = currently.time
 unix_time = ('unix time:', ut)
 date_time = str(datetime.fromtimestamp(ut).strftime('%Y-%m-%d %H:%M:%S'))
-########DELETE BEFORE PIPING TO EXE##########
 print(date_time)
 print(currently.summary)
-#############################################
 END = tk.END
 INSERT = tk.INSERT
 #functions/classes for tkinter
@@ -47,19 +45,28 @@ class Minutely(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
        label = tk.Label(self, text="Minutely Information")
+       textbox = tk.Text(self, width='1000',height='20')
+       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
        label.pack(side="top", fill="both", expand=True)
+       textbox.pack(side='left')
 
 class Hourly(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
        label = tk.Label(self, text="Hourly Information")
+       textbox = tk.Text(self, width='1000',height='20')
+       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
        label.pack(side="top", fill="both", expand=True)
+       textbox.pack(side='left')
 
 class Daily(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
        label = tk.Label(self, text="Daily Information")
+       textbox = tk.Text(self, width='1000',height='20')
+       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
        label.pack(side="top", fill="both", expand=True)
+       textbox.pack(side='left')
        
 class Alerts(Page):
     def __init__(self, *args, **kwargs):
@@ -74,7 +81,10 @@ class search_local(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
        label = tk.Label(self, text="This is page 1")
+       textbox = tk.Text(self, width='1000',height='20')
+       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository\nThe plan is for it to contain a way to search for a location and access the weather data of that location')
        label.pack(side="top", fill="both", expand=True)
+       textbox.pack(side='left')
 #tkinter window
 class MainView(tk.Frame):
     def __init__(self, *args, **kwargs):
