@@ -12,19 +12,24 @@ long = details.longitude
 loc_city = details.city
 #Forcast.io initialization
 API_KEY_FORCASTIO = "4444fd1464bb71f413ee76e4267a74cb"
-fio = ForecastIO.ForecastIO(API_KEY_FORCASTIO,units=ForecastIO.ForecastIO.UNITS_SI,lang=ForecastIO.ForecastIO.LANG_ENGLISH,latitude=lat,longitude=long)
+fio = ForecastIO.ForecastIO(API_KEY_FORCASTIO,units=ForecastIO.ForecastIO.UNITS_US,lang=ForecastIO.ForecastIO.LANG_ENGLISH,latitude=lat,longitude=long)
 currently = FIOCurrently.FIOCurrently(fio)
 hourly = FIOHourly.FIOHourly(fio)
 daily = FIODaily.FIODaily(fio)
 minutely = FIOMinutely.FIOMinutely(fio)
+calls = int(fio.x_forecast_api_calls)
 #time from forcastio in unix and datetime
 ut = currently.time
 unix_time = ('unix time:', ut)
-date_time = str(datetime.fromtimestamp(ut).strftime('%Y-%m-%d %H:%M:%S'))
+date_time = str(datetime.fromtimestamp(ut).strftime('%Y-%m-%d %I:%M:%S'))
 print(date_time)
 print(currently.summary)
 END = tk.END
 INSERT = tk.INSERT
+#api cutoff
+while calls > 1000:
+    print("Too many API calls today, please check back tommorow")
+    break
 #functions/classes for tkinter
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -37,7 +42,7 @@ class Summary(Page):
        Page.__init__(self, *args, **kwargs)
        label = tk.Label(self, text="Summary",width='1000',height='1')
        textbox = tk.Text(self, width='1000',height='20')
-       textbox.insert(tk.END,'Currently: '+minutely.summary, '\nToday: '+hourly.summary,'\nThis week: '+daily.summary)
+       textbox.insert(tk.END,"Currently: "+str(minutely.summary)+"\nTemperature: "+str(currently.temperature)+"°F"+"\nFeels like: "+str(currently.apparentTemperature)+"°F"+"\nHumidity: "+str(format(currently.humidity,'.0%'))+"\nToday: "+str(hourly.summary)+"\nTomorrow: "+str(daily.summary))
        label.pack(side='top', fill='x')
        textbox.pack(side='left')
 
