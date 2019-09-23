@@ -2,7 +2,8 @@ import ipinfo
 from forecastiopy import *
 from datetime import datetime, timedelta
 import tkinter as tk
-from geopy.geocoders import Nominatim
+from geopy import geocoders
+from geopy.geocoders import GoogleV3
 #ipinfo initialization and finding current latitude & longitude
 ipinfo_access_token = 'bb7867c9bfe0b1'
 handler = ipinfo.getHandler(ipinfo_access_token)
@@ -27,6 +28,9 @@ print(currently.summary)
 print(lat,",",long)
 END = tk.END
 INSERT = tk.INSERT
+def hourly_time(time):
+    date_time = str(datetime.fromtimestamp(time).strftime('%I %p'))
+    return date_time.lstrip('0')
 #api cutoff
 while calls > 1000:
     print("Too many API calls today, please check back tommorow")
@@ -52,33 +56,100 @@ class Wind():
         else:
             windbearing = "NorthWest"
         return windbearing
+    def hourly(data):
+        windbearing = data[13][1]
+        if windbearing == 0 or windbearing == 360:
+            windbearing = "North"
+        elif windbearing == 90:
+            windbearing = "East"
+        elif windbearing == 180:
+            windbearing = "South"
+        elif windbearing == 270:
+            windbearing = "West"
+        elif 0 < windbearing < 90:
+            windbearing = "Northeast"
+        elif 90 < windbearing < 180:
+            windbearing = "Southeast"
+        elif 190 < windbearing < 270:
+            windbearing = "Southwest"
+        else:
+            windbearing = "NorthWest"
+        return windbearing
 #Nearest storm bearing to direction
 class nearest_storm():
     def current():
-        stormbearing = currently.nearestStormBearing
-        if stormbearing == 0 or stormbearing == 360:
-            stormbearing = "North of your current location"
-        elif stormbearing == 90:
-            stormbearing = "East of your current location"
-        elif stormbearing == 180:
-            stormbearing = "South of your current location"
-        elif stormbearing == 270:
-            stormbearing = "West of your current location"
-        elif 0 < stormbearing < 90:
-            stormbearing = "Northeast of your current location"
-        elif 90 < stormbearing < 180:
-            stormbearing = "Southeast of your current location"
-        elif 190 < stormbearing < 270:
-            stormbearing = "Southwest of your current location"
-        else:
-            stormbearing = "NorthWest of your current location"
-        return str(currently.nearestStormDistance)+" Miles "+stormbearing
-#Location
-def location(loc):
-    geolocator = Nominatim(user_agent="Weather App")
-    location = geolocator.geocode(loc)
-    location = [location.latitude, location.longitude]
+        try: 
+            stormbearing = currently.nearestStormBearing
+            if stormbearing == 0 or stormbearing == 360:
+                stormbearing = "North of your current location"
+            elif stormbearing == 90:
+                stormbearing = "East of your current location"
+            elif stormbearing == 180:
+                stormbearing = "South of your current location"
+            elif stormbearing == 270:
+                stormbearing = "West of your current location"
+            elif 0 < stormbearing < 90:
+                stormbearing = "Northeast of your current location"
+            elif 90 < stormbearing < 180:
+                stormbearing = "Southeast of your current location"
+            elif 190 < stormbearing < 270:
+                stormbearing = "Southwest of your current location"
+            else:
+                stormbearing = "NorthWest of your current location"
+            return str(currently.nearestStormDistance)+" Miles "+stormbearing
+        except NameError:
+            return str(currently.nearestStormDistance)+" miles from your current location"
+#Location+search
+def location_search(loc):
+    geolocator = GoogleV3(api_key="AIzaSyCWvcKQMAFSZCMw1Fll5Dz_bmh90KAoUYs")
+    try:
+        location = geolocator.geocode(loc,timeout=10)
+        location = [location.latitude, location.longitude]
+        return location
+    except AttributeError:
+        print("problem with data")
+    
     return location
+#weather data accessors
+def summary_data():
+    return ("Currently: "+str(minutely.summary)+
+           "\nTemperature: "+str(currently.temperature)+"°F"+
+           "\nFeels Like: "+str(currently.apparentTemperature)+"°F"+
+           "\nChance of Rain: "+str(format(currently.precipProbability*100,'.0%'))+
+           "\nHumidity: "+str(format(currently.humidity,'.0%'))+
+           "\nWind Speed: "+str(currently.windSpeed)+"mph"+
+           "\nWind Direction: "+Wind.current()+
+           "\nNearest Storm: "+nearest_storm.current()+
+           "\nToday: "+str(hourly.summary)+
+           "\nThis Week: "+str(daily.summary))
+def hourly_data(textbox):
+    data = [i for i in hourly.data]
+    
+    for num in range(0,len(hourly.data)):
+        data2 = [i for i in data[num].items()]
+        time = hourly_time(int(data2[0][1]))
+        print(time)
+        if time == '12 AM':
+            textbox.insert(tk.END, '----------------------New Day----------------------'+
+                           '\n\nWeather for '+str(time)+
+                           '\nSummary: '+str(data2[1][1])+
+                           '\nTemperature: '+str(data2[6][1])+
+                           '\nFeels Like: '+str(data2[7][1])+
+                           '\nChance of Rain: '+str(int(data2[4][1])*100)+
+                           '\nHumidity: '+str(data2[9][1])+
+                           '\nWind Speed: '+str(data2[11][1])+'mph'+
+                           "\nWind Direction: "+Wind.hourly(data2)+'\n\n')
+        else:
+            textbox.insert(tk.END,'Weather for '+str(time)+
+                           '\nSummary: '+str(data2[1][1])+
+                           '\nTemperature: '+str(data2[6][1])+
+                           '\nFeels Like: '+str(data2[7][1])+
+                           '\nChance of Rain: '+str(int(data2[4][1])*100)+
+                           '\nHumidity: '+str(data2[9][1])+
+                           '\nWind Speed: '+str(data2[11][1])+'mph'+
+                           "\nWind Direction: "+Wind.hourly(data2)+'\n\n')
+                       
+    
 #functions/classes for tkinter
 class Page(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -89,17 +160,16 @@ class Page(tk.Frame):
 class Summary(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-       label = tk.Label(self, text="Summary",width='1000',height='1')
+       label = tk.Label(self, text="Summary for "+loc_city,width='1000',height='1')
        textbox = tk.Text(self, width='1000',height='20')
-       textbox.insert(tk.END,"Currently: "+str(minutely.summary)+"\nTemperature: "+str(currently.temperature)+"°F"+"\nFeels Like: "+str(currently.apparentTemperature)+"°F"+"\nHumidity: "+str(format(currently.humidity,'.0%')))
-       textbox.insert(tk.END,"\nWind Speed: "+str(currently.windSpeed)+"mph"+"\nWind Direction: "+Wind.current()+"\nNearest Storm: "+nearest_storm.current()+"\nToday: "+str(hourly.summary)+"\nTomorrow: "+str(daily.summary))
+       textbox.insert(tk.END,summary_data())
        label.pack(side='top', fill='x')
        textbox.pack(side='left')
 
 class Minutely(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-       label = tk.Label(self, text="Minutely Information")
+       label = tk.Label(self, text="Minutely Information for "+loc_city)
        textbox = tk.Text(self, width='1000',height='20')
        textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
        label.pack(side="top", fill="both", expand=True)
@@ -108,16 +178,16 @@ class Minutely(Page):
 class Hourly(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-       label = tk.Label(self, text="Hourly Information")
+       label = tk.Label(self, text="Hourly Information for "+loc_city)
        textbox = tk.Text(self, width='1000',height='20')
-       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
+       hourly_data(textbox)
        label.pack(side="top", fill="both", expand=True)
        textbox.pack(side='left')
 
 class Daily(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
-       label = tk.Label(self, text="Daily Information")
+       label = tk.Label(self, text="Daily Information for "+loc_city)
        textbox = tk.Text(self, width='1000',height='20')
        textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository')
        label.pack(side="top", fill="both", expand=True)
@@ -136,15 +206,18 @@ class search_local(Page):
    def __init__(self, *args, **kwargs):
        Page.__init__(self, *args, **kwargs)
        #label = tk.Label(self, text="Search")
+       textbox = tk.Text(self, width='1000',height='20')
+       textbox.insert(tk.END,'Type in name of city and press search')
        e = tk.Entry(self, width='17')
        e.pack()
        e.focus_set()
-       b = tk.Button(self, text="search", width='17')
-       b.pack()
-       textbox = tk.Text(self, width='1000',height='20')
-       textbox.insert(tk.END,'This tab is a work in progress and will be fleshed out in future commits to the repository\nThe plan is for it to contain a way to search for a location and access the weather data of that location')
+      # def search():
+        #   location = location_search(e.get())
+       #b = tk.Button(self, text="search", width='17',command=search())
+       #b.pack()
        #label.pack(side="top", fill="both", expand=True)
        textbox.pack(side='left')
+
 #tkinter window
 class MainView(tk.Frame):
     def __init__(self, *args, **kwargs):
@@ -187,6 +260,7 @@ class MainView(tk.Frame):
 
 if __name__ == "__main__":
     root = tk.Tk()
+    root.title("Weather App")
     main = MainView(root)
     main.pack(side="top", fill="both", expand=True)
     root.wm_geometry("500x390")
